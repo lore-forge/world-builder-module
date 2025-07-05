@@ -28,6 +28,8 @@ export interface Map {
   locations: Location[]
   scale: number // km per pixel
   climate: ClimateSettings
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface MapLayer {
@@ -52,6 +54,8 @@ export interface Location {
   quests: Quest[]
   environment: EnvironmentSettings
   images: string[]
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface NPC {
@@ -67,6 +71,8 @@ export interface NPC {
   stats?: CharacterStats
   voiceId?: string
   imageUrl?: string
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface Campaign {
@@ -80,6 +86,23 @@ export interface Campaign {
   sessions: Session[]
   playerNotes: boolean
   gmNotes: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Adventure {
+  id: string
+  worldId: string
+  name: string
+  description: string
+  storyArcs: StoryArc[]
+  questChains: QuestChain[]
+  educationalObjectives: LearningObjective[]
+  sessions: Session[]
+  playerNotes: boolean
+  gmNotes: string
+  createdAt: Date
+  updatedAt: Date
 }
 
 export interface EducationalContent {
@@ -88,6 +111,62 @@ export interface EducationalContent {
   learningObjectives: string[]
   assessments: Assessment[]
   realWorldConnection: string
+}
+
+// AI Service Request Types
+export interface WorldGenerationRequest {
+  name: string
+  genre: 'fantasy' | 'scifi' | 'historical' | 'educational' | 'custom'
+  description: string
+  educationalFocus?: string[]
+  theme?: string
+  complexity: 'simple' | 'moderate' | 'complex'
+  includeImage?: boolean
+}
+
+export interface NPCGenerationRequest {
+  name?: string
+  race: string
+  occupation: string
+  personality?: string
+  background?: string
+  setting?: string
+  knowledgeAreas?: string[]
+  includePortrait?: boolean
+  includeVoice?: boolean
+}
+
+export interface LocationGenerationRequest {
+  mapId: string
+  name: string
+  type: LocationType
+  coordinates: { x: number; y: number }
+  description?: string
+  atmosphere?: string
+  educationalContent?: EducationalContent
+  environment?: EnvironmentSettings
+  includeImage?: boolean
+  mood?: string
+  style?: string
+}
+
+export interface AdventureGenerationRequest {
+  worldId: string
+  title: string
+  description?: string
+  genre?: 'fantasy' | 'scifi' | 'historical' | 'educational' | 'custom'
+  theme?: string
+  difficulty?: 'easy' | 'medium' | 'hard'
+  educationalObjectives?: LearningObjective[]
+  includeImage?: boolean
+}
+
+export interface TerrainGenerationRequest {
+  biome: string
+  size: string
+  features: string[]
+  climate: string
+  includeImage?: boolean
 }
 
 // Supporting types
@@ -109,7 +188,9 @@ export interface EnvironmentSettings {
   timeOfDay: 'dawn' | 'morning' | 'noon' | 'afternoon' | 'dusk' | 'night'
   weather: 'clear' | 'cloudy' | 'rain' | 'storm' | 'snow' | 'fog'
   ambientSounds?: string[]
-  lightLevel: number // 0-100
+  lightLevel?: number // 0-100
+  temperature?: number
+  season?: 'spring' | 'summer' | 'autumn' | 'winter'
 }
 
 export type LocationType = 
@@ -120,11 +201,15 @@ export type LocationType =
   | 'custom'
 
 export interface PersonalityTraits {
-  alignment: string
-  ideals: string[]
-  bonds: string[]
-  flaws: string[]
-  mannerisms: string[]
+  traits: string[]
+  motivations: string[]
+  fears: string[]
+  secrets: string[]
+  alignment?: string
+  ideals?: string[]
+  bonds?: string[]
+  flaws?: string[]
+  mannerisms?: string[]
 }
 
 export interface KnowledgeBase {
@@ -149,10 +234,16 @@ export interface Relationship {
 }
 
 export interface CharacterStats {
-  level: number
-  health: number
-  maxHealth: number
-  attributes: {
+  level?: number
+  health?: number
+  maxHealth?: number
+  strength: number
+  dexterity: number
+  constitution: number
+  intelligence: number
+  wisdom: number
+  charisma: number
+  attributes?: {
     strength: number
     agility: number
     intelligence: number
@@ -306,4 +397,33 @@ export interface AssessmentQuestion {
   options?: string[]
   correctAnswer?: string | string[]
   points: number
+}
+
+// AI Service Response Types
+export interface AIServiceResponse<T = any> {
+  success: boolean
+  data?: T
+  error?: string
+  timestamp: Date
+}
+
+export interface GeneratedNPC extends NPC {
+  generatedAt: Date
+  generationPrompt: string
+}
+
+export interface GeneratedLocation extends Location {
+  generatedAt: Date
+  generationPrompt: string
+}
+
+export interface GeneratedAdventure extends Adventure {
+  generatedAt: Date
+  generationPrompt: string
+}
+
+export interface TerrainGenerationResponse {
+  description: string
+  features: string[]
+  imageUrl?: string
 }
