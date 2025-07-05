@@ -4,7 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAppStore } from "@/lib/store"
-import { Globe, Map, MapPin, Users, BookOpen, Plus, Activity, TrendingUp } from "lucide-react"
+import { Globe, Map, MapPin, Users, BookOpen, Plus, Activity, TrendingUp, Sparkles, Wand2 } from "lucide-react"
+import { AIServiceStatus } from "@/components/ai/ai-service-status"
+import { QuickAIGeneration } from "@/components/ai/quick-ai-generation"
+import { RecentAIGenerations } from "@/components/ai/recent-ai-generations"
+import { AIGenerationStats } from "@/components/ai/ai-generation-stats"
 
 export function DashboardOverview() {
   const { setCurrentModule, worlds, campaigns, npcs } = useAppStore()
@@ -16,6 +20,8 @@ export function DashboardOverview() {
       icon: Globe,
       description: "Worlds created",
       trend: "+2 this week",
+      gradient: "from-blue-500/10 to-cyan-500/10",
+      iconColor: "text-blue-600 dark:text-blue-400"
     },
     {
       title: "Running Campaigns",
@@ -23,6 +29,8 @@ export function DashboardOverview() {
       icon: BookOpen,
       description: "Active campaigns",
       trend: "+1 this month",
+      gradient: "from-purple-500/10 to-pink-500/10",
+      iconColor: "text-purple-600 dark:text-purple-400"
     },
     {
       title: "Total NPCs",
@@ -30,6 +38,8 @@ export function DashboardOverview() {
       icon: Users,
       description: "Characters created",
       trend: "+12 this week",
+      gradient: "from-green-500/10 to-emerald-500/10",
+      iconColor: "text-green-600 dark:text-green-400"
     },
     {
       title: "Locations Mapped",
@@ -37,14 +47,9 @@ export function DashboardOverview() {
       icon: MapPin,
       description: "Unique locations",
       trend: "+8 this week",
+      gradient: "from-orange-500/10 to-red-500/10",
+      iconColor: "text-orange-600 dark:text-orange-400"
     },
-  ]
-
-  const recentActivity = [
-    { action: "Created new world", item: "Mystral Kingdoms", time: "2 hours ago" },
-    { action: "Updated campaign", item: "The Dragon's Hoard", time: "5 hours ago" },
-    { action: "Added NPC", item: "Elara the Wise", time: "1 day ago" },
-    { action: "Generated location", item: "Whispering Woods", time: "2 days ago" },
   ]
 
   return (
@@ -52,26 +57,40 @@ export function DashboardOverview() {
       {/* Welcome Section */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Welcome back, Dungeon Master!</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
+            Welcome back, Dungeon Master!
+          </h2>
+          <p className="text-muted-foreground mt-1">
             Ready to create amazing adventures? Here's what's happening in your worlds.
           </p>
         </div>
-        <Button onClick={() => setCurrentModule("worlds")}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create New World
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setCurrentModule("ai-generators")}>
+            <Wand2 className="mr-2 h-4 w-4" />
+            AI Tools
+          </Button>
+          <Button onClick={() => setCurrentModule("worlds")}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create World
+          </Button>
+        </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* AI Service Status */}
+      <AIServiceStatus />
+
+      {/* Stats Grid with enhanced styling */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card key={stat.title} className="relative overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+            <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient}`} />
+            <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
+              <div className={`p-2 rounded-full bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm`}>
+                <stat.icon className={`h-4 w-4 ${stat.iconColor}`} />
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="relative">
               <div className="text-2xl font-bold">{stat.value}</div>
               <p className="text-xs text-muted-foreground">{stat.description}</p>
               <div className="flex items-center pt-1">
@@ -83,12 +102,22 @@ export function DashboardOverview() {
         ))}
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setCurrentModule("worlds")}>
-          <CardHeader>
+      {/* AI Generation Section */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <QuickAIGeneration />
+        <AIGenerationStats />
+      </div>
+
+      {/* Quick Actions with improved styling */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card 
+          className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-[1.02] group relative overflow-hidden" 
+          onClick={() => setCurrentModule("worlds")}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <CardHeader className="relative">
             <CardTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5" />
+              <Globe className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               Manage Worlds
             </CardTitle>
             <CardDescription>Create and organize your campaign worlds</CardDescription>
@@ -96,12 +125,13 @@ export function DashboardOverview() {
         </Card>
 
         <Card
-          className="cursor-pointer hover:shadow-md transition-shadow"
+          className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-[1.02] group relative overflow-hidden"
           onClick={() => setCurrentModule("map-editor")}
         >
-          <CardHeader>
+          <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <CardHeader className="relative">
             <CardTitle className="flex items-center gap-2">
-              <Map className="h-5 w-5" />
+              <Map className="h-5 w-5 text-green-600 dark:text-green-400" />
               Map Editor
             </CardTitle>
             <CardDescription>Design detailed maps for your adventures</CardDescription>
@@ -109,55 +139,63 @@ export function DashboardOverview() {
         </Card>
 
         <Card
-          className="cursor-pointer hover:shadow-md transition-shadow"
+          className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-[1.02] group relative overflow-hidden"
           onClick={() => setCurrentModule("ai-generators")}
         >
-          <CardHeader>
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <CardHeader className="relative">
             <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
+              <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               AI Generators
             </CardTitle>
             <CardDescription>Generate content with AI assistance</CardDescription>
           </CardHeader>
         </Card>
+
+        <Card
+          className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-[1.02] group relative overflow-hidden"
+          onClick={() => setCurrentModule("campaigns")}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <CardHeader className="relative">
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              Campaigns
+            </CardTitle>
+            <CardDescription>Manage your ongoing adventures</CardDescription>
+          </CardHeader>
+        </Card>
       </div>
 
-      {/* Recent Activity & Quick Access */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Your latest world-building actions</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {recentActivity.map((activity, index) => (
-              <div key={index} className="flex items-center space-x-4">
-                <div className="w-2 h-2 bg-primary rounded-full" />
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium">{activity.action}</p>
-                  <p className="text-sm text-muted-foreground">{activity.item}</p>
-                </div>
-                <div className="text-xs text-muted-foreground">{activity.time}</div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
+      {/* Recent Activity & AI Generations */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <RecentAIGenerations />
+        
         <Card>
           <CardHeader>
             <CardTitle>Active Campaigns</CardTitle>
             <CardDescription>Your currently running adventures</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {campaigns.slice(0, 4).map((campaign) => (
-              <div key={campaign.id} className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">{campaign.name}</p>
-                  <p className="text-xs text-muted-foreground">{campaign.world}</p>
-                </div>
-                <Badge variant={campaign.status === "active" ? "default" : "secondary"}>{campaign.status}</Badge>
+            {campaigns.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-4">No active campaigns yet</p>
+                <Button variant="outline" size="sm" onClick={() => setCurrentModule("campaigns")}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Campaign
+                </Button>
               </div>
-            ))}
+            ) : (
+              campaigns.slice(0, 4).map((campaign) => (
+                <div key={campaign.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                  <div>
+                    <p className="text-sm font-medium">{campaign.name}</p>
+                    <p className="text-xs text-muted-foreground">{campaign.world}</p>
+                  </div>
+                  <Badge variant={campaign.status === "active" ? "default" : "secondary"}>{campaign.status}</Badge>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
