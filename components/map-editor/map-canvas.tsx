@@ -214,7 +214,7 @@ export function MapCanvas({ width = 800, height = 600, onSave }: MapCanvasProps)
     <div className="flex flex-col gap-4">
       {/* Toolbar */}
       <div className="flex items-center gap-4 p-4 bg-card rounded-lg border">
-        <ToggleGroup type="single" value={tool} onValueChange={(value) => value && setTool(value as Tool)}>
+        <ToggleGroup type="single" value={tool} onValueChange={(value: string) => value && setTool(value as Tool)}>
           <ToggleGroupItem value="select" aria-label="Select">
             <MousePointer2 className="h-4 w-4" />
           </ToggleGroupItem>
