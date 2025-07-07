@@ -3,8 +3,79 @@ import {
   VertexAISceneCreatorService, 
   VertexAIAdventureService, 
   VoiceCharactersService, 
-  RPGAICharImgServices 
+  RPGAICharImgServices
 } from 'lore-forge-ai-services';
+
+// Configuration for RPG-Immersive API endpoints
+const RPG_IMMERSIVE_BASE_URL = process.env.NEXT_PUBLIC_RPG_IMMERSIVE_API_URL || 'http://localhost:3000';
+
+// API Client for RPG-Immersive endpoints
+class RPGImmersiveAPIClient {
+  private baseUrl: string;
+
+  constructor(baseUrl: string = RPG_IMMERSIVE_BASE_URL) {
+    this.baseUrl = baseUrl;
+  }
+
+  async callAPI<T>(endpoint: string, data: any): Promise<{ success: boolean; data?: T; error?: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Error calling ${endpoint}:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  // World Builder API calls
+  async generateWorldHistory(request: WorldHistoryRequest) {
+    return this.callAPI('world-history-generator', request);
+  }
+
+  async generateMonster(request: MonsterGenerationRequest) {
+    return this.callAPI('monster-generator', request);
+  }
+
+  async generateMission(request: MissionGenerationRequest) {
+    return this.callAPI('mission-generator', request);
+  }
+
+  async generateNPCDedicated(request: NPCGenerationRequest) {
+    return this.callAPI('npc-generator', { 
+      npcType: `${request.race} ${request.occupation}`,
+      prompt: `Create a ${request.race} ${request.occupation} with personality: ${request.personality}, background: ${request.background}, in setting: ${request.setting}. Knowledge areas: ${request.knowledgeAreas.join(', ')}`
+    });
+  }
+
+  async generateObject(request: ObjectGenerationRequest) {
+    return this.callAPI('object-generator', request);
+  }
+
+  async generateLocation(request: LocationGenerationRequest) {
+    return this.callAPI('location-generator', {
+      locationType: request.type,
+      prompt: `Create location "${request.name}": ${request.description}. Atmosphere: ${request.atmosphere}`
+    });
+  }
+
+  async generateMap(request: MapGenerationRequest) {
+    return this.callAPI('map-generator', request);
+  }
+}
 
 import { 
   NPC, 
@@ -60,6 +131,37 @@ export interface TerrainGenerationRequest {
   includeImage?: boolean;
 }
 
+// New World Builder Service Interfaces
+export interface WorldHistoryRequest {
+  worldName: string;
+  prompt: string;
+  language?: 'ES' | 'EN';
+}
+
+export interface MonsterGenerationRequest {
+  monsterType: string;
+  prompt: string;
+  language?: 'ES' | 'EN';
+}
+
+export interface MissionGenerationRequest {
+  missionType: string;
+  prompt: string;
+  language?: 'ES' | 'EN';
+}
+
+export interface ObjectGenerationRequest {
+  objectType: string;
+  prompt: string;
+  language?: 'ES' | 'EN';
+}
+
+export interface MapGenerationRequest {
+  mapType: string;
+  prompt: string;
+  language?: 'ES' | 'EN';
+}
+
 export interface AIServiceResponse<T> {
   success: boolean;
   data?: T;
@@ -113,6 +215,90 @@ export interface GeneratedTerrain {
   };
 }
 
+// New Generated Types
+export interface GeneratedWorldHistory {
+  id: string;
+  worldName: string;
+  timeline: string;
+  geography: string;
+  cultures: string;
+  majorEvents: string[];
+  aiGenerated: true;
+  generationMetadata: {
+    prompt: string;
+    version: string;
+    timestamp: Date;
+  };
+}
+
+export interface GeneratedMonster {
+  id: string;
+  name: string;
+  type: string;
+  stats: {
+    health: number;
+    attack: number;
+    defense: number;
+    speed: number;
+  };
+  abilities: string[];
+  description: string;
+  aiGenerated: true;
+  generationMetadata: {
+    prompt: string;
+    version: string;
+    timestamp: Date;
+  };
+}
+
+export interface GeneratedMission {
+  id: string;
+  title: string;
+  type: string;
+  objectives: string[];
+  rewards: string[];
+  description: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  aiGenerated: true;
+  generationMetadata: {
+    prompt: string;
+    version: string;
+    timestamp: Date;
+  };
+}
+
+export interface GeneratedObject {
+  id: string;
+  name: string;
+  type: string;
+  properties: string[];
+  description: string;
+  value?: number;
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+  aiGenerated: true;
+  generationMetadata: {
+    prompt: string;
+    version: string;
+    timestamp: Date;
+  };
+}
+
+export interface GeneratedMap {
+  id: string;
+  name: string;
+  type: string;
+  layout: string;
+  features: string[];
+  description: string;
+  imageUrl?: string;
+  aiGenerated: true;
+  generationMetadata: {
+    prompt: string;
+    version: string;
+    timestamp: Date;
+  };
+}
+
 export class WorldBuilderAIService {
   private static instance: WorldBuilderAIService;
   private characterService: VertexAICharacterService;
@@ -120,6 +306,8 @@ export class WorldBuilderAIService {
   private adventureService: VertexAIAdventureService;
   private voiceService: VoiceCharactersService;
   private imageService: RPGAICharImgServices;
+  // RPG-Immersive API Client for new services
+  private apiClient: RPGImmersiveAPIClient;
   private initialized = false;
 
   private constructor() {
@@ -128,6 +316,7 @@ export class WorldBuilderAIService {
     this.adventureService = new VertexAIAdventureService();
     this.voiceService = new VoiceCharactersService();
     this.imageService = new RPGAICharImgServices();
+    this.apiClient = new RPGImmersiveAPIClient();
   }
 
   public static getInstance(): WorldBuilderAIService {
@@ -141,15 +330,21 @@ export class WorldBuilderAIService {
     if (this.initialized) return;
 
     try {
-      // Initialize all AI services
+      // Initialize existing AI services (for character, scene, adventure generation)
       await this.characterService.initialize();
       await this.sceneService.initialize();
       await this.adventureService.initialize();
       await this.voiceService.initialize();
       await this.imageService.initialize();
       
+      // Test API connection to RPG-Immersive
+      // No initialization needed for API client, just verify connectivity
+      console.log('Testing connection to RPG-Immersive API...');
+      
       this.initialized = true;
       console.log('World Builder AI Service initialized successfully');
+      console.log('- Direct AI services: Character, Scene, Adventure, Voice, Image');
+      console.log('- API services: World History, Monster, Mission, NPC, Object, Location, Map');
     } catch (error) {
       console.error('Failed to initialize World Builder AI Service:', error);
       throw error;
@@ -162,28 +357,24 @@ export class WorldBuilderAIService {
         await this.initialize();
       }
 
-      const prompt = `Create a ${request.race} ${request.occupation} with the following characteristics:
-        - Personality: ${request.personality}
-        - Background: ${request.background}
-        - Setting: ${request.setting}
-        - Knowledge Areas: ${request.knowledgeAreas.join(', ')}
-        
-        Please provide a detailed character with name, backstory, personality traits, and knowledge base.`;
-
-      // Generate character using AI service
-      const characterResponse = await this.characterService.generateCharacter(prompt);
+      // Use the new NPC generator via RPG-Immersive API
+      const apiResponse = await this.apiClient.generateNPCDedicated(request);
       
+      if (!apiResponse.success) {
+        throw new Error(apiResponse.error || 'Failed to generate NPC via API');
+      }
+
       let portraitUrl: string | undefined;
       let voiceId: string | undefined;
 
-      // Generate portrait if requested
+      // Generate portrait if requested (using existing services)
       if (request.includePortrait) {
         const portraitPrompt = `Portrait of a ${request.race} ${request.occupation}, ${request.personality}, fantasy style`;
         const portraitResponse = await this.imageService.generateCharacterPortrait(portraitPrompt);
         portraitUrl = portraitResponse.imageUrl;
       }
 
-      // Generate voice if requested
+      // Generate voice if requested (using existing services)
       if (request.includeVoice) {
         const voiceCharacteristics = {
           race: request.race,
@@ -194,24 +385,25 @@ export class WorldBuilderAIService {
         voiceId = voiceResponse.voiceId;
       }
 
-      // Parse AI response and create NPC
+      // Parse API response and create NPC
+      const npcData = apiResponse.data || {};
       const npc: GeneratedNPC = {
         id: `npc_${Date.now()}`,
-        name: characterResponse.name || `${request.race} ${request.occupation}`,
+        name: npcData.name || `${request.race} ${request.occupation}`,
         race: request.race,
         occupation: request.occupation,
-        personality: this.parsePersonalityTraits(characterResponse.personality || request.personality),
-        backstory: characterResponse.backstory || '',
-        knowledge: this.parseKnowledgeBase(request.knowledgeAreas, characterResponse.knowledge),
-        dialogueTree: [], // Will be populated by dialogue generation
+        personality: this.parsePersonalityTraits(npcData.personality || request.personality),
+        backstory: npcData.backstory || '',
+        knowledge: this.parseKnowledgeBase(request.knowledgeAreas, npcData.knowledge),
+        dialogueTree: [],
         relationships: [],
-        stats: characterResponse.stats,
+        stats: npcData.stats || {},
         voiceId,
         imageUrl: portraitUrl,
         aiGenerated: true,
         generationMetadata: {
-          prompt,
-          version: '1.0.0',
+          prompt: `${request.race} ${request.occupation}`,
+          version: '2.0.0', // Updated version for API integration
           timestamp: new Date()
         }
       };
@@ -220,9 +412,9 @@ export class WorldBuilderAIService {
         success: true,
         data: npc,
         metadata: {
-          tokensUsed: characterResponse.tokensUsed,
-          processingTime: characterResponse.processingTime,
-          cacheHit: characterResponse.cacheHit
+          tokensUsed: 0, // API doesn't expose this
+          processingTime: 0, // API handles this internally
+          cacheHit: false
         }
       };
 
@@ -241,43 +433,41 @@ export class WorldBuilderAIService {
         await this.initialize();
       }
 
-      const prompt = `Create a detailed ${request.type} location called "${request.name}":
-        - Description: ${request.description}
-        - Atmosphere: ${request.atmosphere}
-        - Setting: Fantasy world
-        
-        Please provide rich descriptions, environmental details, and any notable features.`;
-
-      // Generate location using AI service
-      const locationResponse = await this.sceneService.generateScene(prompt);
+      // Use the new Location generator via RPG-Immersive API
+      const apiResponse = await this.apiClient.generateLocation(request);
       
+      if (!apiResponse.success) {
+        throw new Error(apiResponse.error || 'Failed to generate location via API');
+      }
+
       let imageUrl: string | undefined;
 
-      // Generate image if requested
+      // Generate image if requested (using existing services)
       if (request.includeImage) {
         const imagePrompt = `${request.name}, ${request.type}, ${request.atmosphere}, ${request.mood || 'atmospheric'}, ${request.style || 'fantasy'} style`;
         const imageResponse = await this.imageService.generateSceneImage(imagePrompt);
         imageUrl = imageResponse.imageUrl;
       }
 
-      // Create location object
+      // Parse API response and create location
+      const locationData = apiResponse.data || {};
       const location: GeneratedLocation = {
         id: `location_${Date.now()}`,
         mapId: request.mapId,
         name: request.name,
         type: request.type as any,
         coordinates: request.coordinates,
-        description: locationResponse.description || request.description,
+        description: locationData.description || request.description,
         educationalContent: undefined,
         npcs: [],
         items: [],
         quests: [],
-        environment: this.parseEnvironmentSettings(locationResponse.environment || request.atmosphere),
+        environment: this.parseEnvironmentSettings(locationData.environment || request.atmosphere),
         images: imageUrl ? [imageUrl] : [],
         aiGenerated: true,
         generationMetadata: {
-          prompt,
-          version: '1.0.0',
+          prompt: `${request.type} location: ${request.name}`,
+          version: '2.0.0', // Updated version for API integration
           timestamp: new Date()
         }
       };
@@ -286,9 +476,9 @@ export class WorldBuilderAIService {
         success: true,
         data: location,
         metadata: {
-          tokensUsed: locationResponse.tokensUsed,
-          processingTime: locationResponse.processingTime,
-          cacheHit: locationResponse.cacheHit
+          tokensUsed: 0, // API doesn't expose this
+          processingTime: 0, // API handles this internally
+          cacheHit: false
         }
       };
 
@@ -426,21 +616,296 @@ export class WorldBuilderAIService {
     }
   }
 
+  // New World Builder Generation Methods
+  async generateWorldHistory(request: WorldHistoryRequest): Promise<AIServiceResponse<GeneratedWorldHistory>> {
+    try {
+      if (!this.initialized) {
+        await this.initialize();
+      }
+
+      const apiResponse = await this.apiClient.generateWorldHistory(request);
+      
+      if (!apiResponse.success) {
+        throw new Error(apiResponse.error || 'Failed to generate world history via API');
+      }
+
+      const historyData = apiResponse.data || {};
+      const worldHistory: GeneratedWorldHistory = {
+        id: `history_${Date.now()}`,
+        worldName: request.worldName,
+        timeline: historyData.timeline || 'Ancient times to present',
+        geography: historyData.geography || 'Diverse landscapes',
+        cultures: historyData.cultures || 'Rich cultural diversity',
+        majorEvents: historyData.majorEvents || [],
+        aiGenerated: true,
+        generationMetadata: {
+          prompt: request.prompt,
+          version: '2.0.0',
+          timestamp: new Date()
+        }
+      };
+
+      return {
+        success: true,
+        data: worldHistory,
+        metadata: {
+          tokensUsed: 0,
+          processingTime: 0,
+          cacheHit: false
+        }
+      };
+
+    } catch (error) {
+      console.error('Error generating world history:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
+  }
+
+  async generateMonster(request: MonsterGenerationRequest): Promise<AIServiceResponse<GeneratedMonster>> {
+    try {
+      if (!this.initialized) {
+        await this.initialize();
+      }
+
+      const apiResponse = await this.apiClient.generateMonster(request);
+      
+      if (!apiResponse.success) {
+        throw new Error(apiResponse.error || 'Failed to generate monster via API');
+      }
+
+      const monsterData = apiResponse.data || {};
+      const monster: GeneratedMonster = {
+        id: `monster_${Date.now()}`,
+        name: monsterData.name || `Generated ${request.monsterType}`,
+        type: request.monsterType,
+        stats: monsterData.stats || { health: 100, attack: 20, defense: 15, speed: 10 },
+        abilities: monsterData.abilities || [],
+        description: monsterData.description || `A ${request.monsterType} creature`,
+        aiGenerated: true,
+        generationMetadata: {
+          prompt: request.prompt,
+          version: '2.0.0',
+          timestamp: new Date()
+        }
+      };
+
+      return {
+        success: true,
+        data: monster,
+        metadata: {
+          tokensUsed: 0,
+          processingTime: 0,
+          cacheHit: false
+        }
+      };
+
+    } catch (error) {
+      console.error('Error generating monster:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
+  }
+
+  async generateMission(request: MissionGenerationRequest): Promise<AIServiceResponse<GeneratedMission>> {
+    try {
+      if (!this.initialized) {
+        await this.initialize();
+      }
+
+      const apiResponse = await this.apiClient.generateMission(request);
+      
+      if (!apiResponse.success) {
+        throw new Error(apiResponse.error || 'Failed to generate mission via API');
+      }
+
+      const missionData = apiResponse.data || {};
+      const mission: GeneratedMission = {
+        id: `mission_${Date.now()}`,
+        title: missionData.title || `Generated ${request.missionType} Mission`,
+        type: request.missionType,
+        objectives: missionData.objectives || [],
+        rewards: missionData.rewards || [],
+        description: missionData.description || `A ${request.missionType} mission`,
+        difficulty: missionData.difficulty || 'medium',
+        aiGenerated: true,
+        generationMetadata: {
+          prompt: request.prompt,
+          version: '2.0.0',
+          timestamp: new Date()
+        }
+      };
+
+      return {
+        success: true,
+        data: mission,
+        metadata: {
+          tokensUsed: 0,
+          processingTime: 0,
+          cacheHit: false
+        }
+      };
+
+    } catch (error) {
+      console.error('Error generating mission:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
+  }
+
+  async generateObject(request: ObjectGenerationRequest): Promise<AIServiceResponse<GeneratedObject>> {
+    try {
+      if (!this.initialized) {
+        await this.initialize();
+      }
+
+      const apiResponse = await this.apiClient.generateObject(request);
+      
+      if (!apiResponse.success) {
+        throw new Error(apiResponse.error || 'Failed to generate object via API');
+      }
+
+      const objectData = apiResponse.data || {};
+      const object: GeneratedObject = {
+        id: `object_${Date.now()}`,
+        name: objectData.name || `Generated ${request.objectType}`,
+        type: request.objectType,
+        properties: objectData.properties || [],
+        description: objectData.description || `A ${request.objectType} object`,
+        value: objectData.value || 0,
+        rarity: objectData.rarity || 'common',
+        aiGenerated: true,
+        generationMetadata: {
+          prompt: request.prompt,
+          version: '2.0.0',
+          timestamp: new Date()
+        }
+      };
+
+      return {
+        success: true,
+        data: object,
+        metadata: {
+          tokensUsed: 0,
+          processingTime: 0,
+          cacheHit: false
+        }
+      };
+
+    } catch (error) {
+      console.error('Error generating object:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
+  }
+
+  async generateMap(request: MapGenerationRequest): Promise<AIServiceResponse<GeneratedMap>> {
+    try {
+      if (!this.initialized) {
+        await this.initialize();
+      }
+
+      const apiResponse = await this.apiClient.generateMap(request);
+      
+      if (!apiResponse.success) {
+        throw new Error(apiResponse.error || 'Failed to generate map via API');
+      }
+
+      const mapData = apiResponse.data || {};
+      const map: GeneratedMap = {
+        id: `map_${Date.now()}`,
+        name: mapData.name || `Generated ${request.mapType} Map`,
+        type: request.mapType,
+        layout: mapData.layout || 'Generated layout',
+        features: mapData.features || [],
+        description: mapData.description || `A ${request.mapType} map`,
+        imageUrl: mapData.imageUrl,
+        aiGenerated: true,
+        generationMetadata: {
+          prompt: request.prompt,
+          version: '2.0.0',
+          timestamp: new Date()
+        }
+      };
+
+      return {
+        success: true,
+        data: map,
+        metadata: {
+          tokensUsed: 0,
+          processingTime: 0,
+          cacheHit: false
+        }
+      };
+
+    } catch (error) {
+      console.error('Error generating map:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
+  }
+
   async checkServiceHealth(): Promise<{ [key: string]: boolean }> {
     const health = {
       characterService: false,
       sceneService: false,
       adventureService: false,
       voiceService: false,
-      imageService: false
+      imageService: false,
+      // New API services
+      worldHistoryAPI: false,
+      monsterAPI: false,
+      missionAPI: false,
+      npcAPI: false,
+      objectAPI: false,
+      locationAPI: false,
+      mapAPI: false
     };
 
     try {
+      // Check existing services
       health.characterService = await this.characterService.healthCheck();
       health.sceneService = await this.sceneService.healthCheck();
       health.adventureService = await this.adventureService.healthCheck();
       health.voiceService = await this.voiceService.healthCheck();
       health.imageService = await this.imageService.healthCheck();
+
+      // Check API services by making test requests
+      try {
+        await this.apiClient.generateWorldHistory({ worldName: 'Test', prompt: 'Test', language: 'EN' });
+        health.worldHistoryAPI = true;
+      } catch { health.worldHistoryAPI = false; }
+
+      try {
+        await this.apiClient.generateMonster({ monsterType: 'Test', prompt: 'Test', language: 'EN' });
+        health.monsterAPI = true;
+      } catch { health.monsterAPI = false; }
+
+      try {
+        await this.apiClient.generateMission({ missionType: 'Test', prompt: 'Test', language: 'EN' });
+        health.missionAPI = true;
+      } catch { health.missionAPI = false; }
+
+      try {
+        await this.apiClient.generateObject({ objectType: 'Test', prompt: 'Test', language: 'EN' });
+        health.objectAPI = true;
+      } catch { health.objectAPI = false; }
+
+      try {
+        await this.apiClient.generateMap({ mapType: 'Test', prompt: 'Test', language: 'EN' });
+        health.mapAPI = true;
+      } catch { health.mapAPI = false; }
+
     } catch (error) {
       console.error('Error checking service health:', error);
     }

@@ -9,7 +9,18 @@ import {
   GeneratedLocation,
   GeneratedAdventure,
   GeneratedTerrain,
-  AIServiceResponse
+  AIServiceResponse,
+  // New World Builder Interfaces
+  WorldHistoryRequest,
+  MonsterGenerationRequest,
+  MissionGenerationRequest,
+  ObjectGenerationRequest,
+  MapGenerationRequest,
+  GeneratedWorldHistory,
+  GeneratedMonster,
+  GeneratedMission,
+  GeneratedObject,
+  GeneratedMap
 } from '../lib/services/world-builder-ai-service';
 
 interface UseWorldBuilderAIReturn {
@@ -18,6 +29,13 @@ interface UseWorldBuilderAIReturn {
   generateLocation: (request: LocationGenerationRequest) => Promise<AIServiceResponse<GeneratedLocation>>;
   generateAdventure: (request: AdventureGenerationRequest) => Promise<AIServiceResponse<GeneratedAdventure>>;
   generateTerrain: (request: TerrainGenerationRequest) => Promise<AIServiceResponse<GeneratedTerrain>>;
+  
+  // New World Builder Generation functions
+  generateWorldHistory: (request: WorldHistoryRequest) => Promise<AIServiceResponse<GeneratedWorldHistory>>;
+  generateMonster: (request: MonsterGenerationRequest) => Promise<AIServiceResponse<GeneratedMonster>>;
+  generateMission: (request: MissionGenerationRequest) => Promise<AIServiceResponse<GeneratedMission>>;
+  generateObject: (request: ObjectGenerationRequest) => Promise<AIServiceResponse<GeneratedObject>>;
+  generateMap: (request: MapGenerationRequest) => Promise<AIServiceResponse<GeneratedMap>>;
   
   // Service management
   checkServiceHealth: () => Promise<{ [key: string]: boolean }>;
@@ -35,6 +53,11 @@ interface UseWorldBuilderAIReturn {
     location: boolean;
     adventure: boolean;
     terrain: boolean;
+    worldHistory: boolean;
+    monster: boolean;
+    mission: boolean;
+    object: boolean;
+    map: boolean;
   };
 }
 
@@ -48,7 +71,12 @@ export function useWorldBuilderAI(): UseWorldBuilderAIReturn {
     npc: false,
     location: false,
     adventure: false,
-    terrain: false
+    terrain: false,
+    worldHistory: false,
+    monster: false,
+    mission: false,
+    object: false,
+    map: false
   });
 
   // Initialize services on first use
@@ -222,12 +250,150 @@ export function useWorldBuilderAI(): UseWorldBuilderAIReturn {
     }
   }, []);
 
+  // New World Builder Generation Methods
+  const generateWorldHistory = useCallback(async (request: WorldHistoryRequest): Promise<AIServiceResponse<GeneratedWorldHistory>> => {
+    try {
+      setLoadingStates(prev => ({ ...prev, worldHistory: true }));
+      setError(null);
+      
+      const response = await worldBuilderAI.generateWorldHistory(request);
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to generate world history');
+      }
+      
+      return response;
+      
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate world history';
+      setError(errorMessage);
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
+    } finally {
+      setLoadingStates(prev => ({ ...prev, worldHistory: false }));
+    }
+  }, []);
+
+  const generateMonster = useCallback(async (request: MonsterGenerationRequest): Promise<AIServiceResponse<GeneratedMonster>> => {
+    try {
+      setLoadingStates(prev => ({ ...prev, monster: true }));
+      setError(null);
+      
+      const response = await worldBuilderAI.generateMonster(request);
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to generate monster');
+      }
+      
+      return response;
+      
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate monster';
+      setError(errorMessage);
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
+    } finally {
+      setLoadingStates(prev => ({ ...prev, monster: false }));
+    }
+  }, []);
+
+  const generateMission = useCallback(async (request: MissionGenerationRequest): Promise<AIServiceResponse<GeneratedMission>> => {
+    try {
+      setLoadingStates(prev => ({ ...prev, mission: true }));
+      setError(null);
+      
+      const response = await worldBuilderAI.generateMission(request);
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to generate mission');
+      }
+      
+      return response;
+      
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate mission';
+      setError(errorMessage);
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
+    } finally {
+      setLoadingStates(prev => ({ ...prev, mission: false }));
+    }
+  }, []);
+
+  const generateObject = useCallback(async (request: ObjectGenerationRequest): Promise<AIServiceResponse<GeneratedObject>> => {
+    try {
+      setLoadingStates(prev => ({ ...prev, object: true }));
+      setError(null);
+      
+      const response = await worldBuilderAI.generateObject(request);
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to generate object');
+      }
+      
+      return response;
+      
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate object';
+      setError(errorMessage);
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
+    } finally {
+      setLoadingStates(prev => ({ ...prev, object: false }));
+    }
+  }, []);
+
+  const generateMap = useCallback(async (request: MapGenerationRequest): Promise<AIServiceResponse<GeneratedMap>> => {
+    try {
+      setLoadingStates(prev => ({ ...prev, map: true }));
+      setError(null);
+      
+      const response = await worldBuilderAI.generateMap(request);
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to generate map');
+      }
+      
+      return response;
+      
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate map';
+      setError(errorMessage);
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
+    } finally {
+      setLoadingStates(prev => ({ ...prev, map: false }));
+    }
+  }, []);
+
   return {
     // Generation functions
     generateNPC,
     generateLocation,
     generateAdventure,
     generateTerrain,
+    
+    // New World Builder Generation functions
+    generateWorldHistory,
+    generateMonster,
+    generateMission,
+    generateObject,
+    generateMap,
     
     // Service management
     checkServiceHealth,
@@ -251,8 +417,8 @@ interface UseBatchAIOperationsReturn {
 }
 
 export interface BatchOperation {
-  type: 'npc' | 'location' | 'adventure' | 'terrain';
-  request: NPCGenerationRequest | LocationGenerationRequest | AdventureGenerationRequest | TerrainGenerationRequest;
+  type: 'npc' | 'location' | 'adventure' | 'terrain' | 'worldHistory' | 'monster' | 'mission' | 'object' | 'map';
+  request: NPCGenerationRequest | LocationGenerationRequest | AdventureGenerationRequest | TerrainGenerationRequest | WorldHistoryRequest | MonsterGenerationRequest | MissionGenerationRequest | ObjectGenerationRequest | MapGenerationRequest;
   id: string;
 }
 
@@ -269,7 +435,7 @@ export function useBatchAIOperations(): UseBatchAIOperationsReturn {
   const [batchProgress, setBatchProgress] = useState(0);
   const [batchErrors, setBatchErrors] = useState<string[]>([]);
   
-  const { generateNPC, generateLocation, generateAdventure, generateTerrain } = useWorldBuilderAI();
+  const { generateNPC, generateLocation, generateAdventure, generateTerrain, generateWorldHistory, generateMonster, generateMission, generateObject, generateMap } = useWorldBuilderAI();
 
   const generateBatch = useCallback(async (operations: BatchOperation[]): Promise<BatchResult[]> => {
     setIsBatchProcessing(true);
@@ -296,6 +462,21 @@ export function useBatchAIOperations(): UseBatchAIOperationsReturn {
             break;
           case 'terrain':
             response = await generateTerrain(operation.request as TerrainGenerationRequest);
+            break;
+          case 'worldHistory':
+            response = await generateWorldHistory(operation.request as WorldHistoryRequest);
+            break;
+          case 'monster':
+            response = await generateMonster(operation.request as MonsterGenerationRequest);
+            break;
+          case 'mission':
+            response = await generateMission(operation.request as MissionGenerationRequest);
+            break;
+          case 'object':
+            response = await generateObject(operation.request as ObjectGenerationRequest);
+            break;
+          case 'map':
+            response = await generateMap(operation.request as MapGenerationRequest);
             break;
           default:
             throw new Error(`Unknown operation type: ${operation.type}`);
